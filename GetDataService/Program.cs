@@ -15,6 +15,8 @@ namespace GetDataService
         static HttpClient client = new HttpClient();
         static void Main(string[] args)
         {
+
+            test();
             now = DateTime.Now.AddDays(-1).ToShortPersianDateString();
             List<UserModel> users = GetUsers();
             List<UserModel> Teachers = GetTeachers();
@@ -32,13 +34,32 @@ namespace GetDataService
                     UserName = item.MeliCode,
 
                 };
-                var res = client.PostAsJsonAsync("http://class.tamam.ir/Users/AddUser", vm).Result;
+                var res = client.PostAsJsonAsync("http://localhost:49478/Users/AddUser", vm).Result;
                 res.EnsureSuccessStatusCode();
                 var data = res.Content.ReadAsStringAsync();
                 Console.WriteLine(data);
             }
 
 
+        }
+
+        private static void test()
+        {
+            SendDataViewModel vm = new SendDataViewModel()
+            {
+                Date = "{item.Date}-{item.Time}",
+                GroupCode = "item.ClassUniqCode",
+                IsTeacher = true,
+                LastName = "item.LastName",
+                Name = "item.Name",
+                Password = "item.UniqCode",
+                UserName = "item.MeliCode",
+
+            };
+            var res = client.PostAsJsonAsync("http://localhost:5000/Users/AddUser", vm).Result;
+            res.EnsureSuccessStatusCode();
+            var data = res.Content.ReadFromJsonAsync<AddUserResultViewModel>();
+            Console.WriteLine(data);
         }
 
         private static List<UserModel> GetTeachers()
