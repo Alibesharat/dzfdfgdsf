@@ -1,7 +1,5 @@
-﻿using System;
-using System.Data;
-using Oracle.ManagedDataAccess.Client;
-using Oracle.ManagedDataAccess.Types;
+﻿using Oracle.ManagedDataAccess.Client;
+using System;
 
 namespace GetDataService
 {
