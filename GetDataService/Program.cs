@@ -13,10 +13,11 @@ namespace GetDataService
         static string conString = "User Id=ili;Password=iliqaz987;Data Source=86.104.46.204:1521/kanoondb;";
         static string now;
         static HttpClient client = new HttpClient();
+       static string Address = "http://localhost:5000/Users/AddUser";
         static void Main(string[] args)
         {
 
-            test();
+            //test();
             now = DateTime.Now.AddDays(-1).ToShortPersianDateString();
             List<UserModel> users = GetUsers();
             List<UserModel> Teachers = GetTeachers();
@@ -34,9 +35,9 @@ namespace GetDataService
                     UserName = item.MeliCode,
 
                 };
-                var res = client.PostAsJsonAsync("http://localhost:49478/Users/AddUser", vm).Result;
+                var res = client.PostAsJsonAsync(Address, vm).Result;
                 res.EnsureSuccessStatusCode();
-                var data = res.Content.ReadAsStringAsync();
+                var data = res.Content.ReadFromJsonAsync<AddUserResultViewModel>().Result;
                 Console.WriteLine(data);
             }
 
@@ -89,7 +90,7 @@ namespace GetDataService
                             Name = reader[0].ToString(),
                             LastName = reader[1].ToString(),
                             MeliCode = reader[2].ToString(),
-                            UniqCode = reader[2].ToString(),
+                            UniqCode = $"p@{reader[2]}",
                             ClassUniqCode = reader[3].ToString(),
                             RegisterDate = reader[4].ToString(),
                             IsTeacher = true
