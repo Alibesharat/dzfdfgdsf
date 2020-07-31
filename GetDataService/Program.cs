@@ -1,64 +1,149 @@
-﻿using Oracle.ManagedDataAccess.Client;
+﻿using DNTPersianUtils.Core;
+using GetDataService.Models;
+using Oracle.ManagedDataAccess.Client;
 using System;
+using System.Collections.Generic;
+using System.Net.Http;
+using System.Net.Http.Json;
 
 namespace GetDataService
 {
     class Program
     {
+        static string conString = "User Id=ili;Password=iliqaz987;Data Source=86.104.46.204:1521/kanoondb;";
+        static string now;
+        static HttpClient client = new HttpClient();
         static void Main(string[] args)
         {
-            //Demo: Basic ODP.NET Core application to connect, query, and return
-            // results from an OracleDataReader to a console
+            now = DateTime.Now.AddDays(-1).ToShortPersianDateString();
+            List<UserModel> users = GetUsers();
+            List<UserModel> Teachers = GetTeachers();
+            users.AddRange(Teachers);
+            foreach (var item in users)
+            {
+                SendDataViewModel vm = new SendDataViewModel()
+                {
+                    Date = $"{item.Date}-{item.Time}",
+                    GroupCode = item.ClassUniqCode,
+                    IsTeacher = item.IsTeacher,
+                    LastName = item.LastName,
+                    Name = item.Name,
+                    Password = item.UniqCode,
+                    UserName = item.MeliCode,
 
-            //Create a connection to Oracle			
-            string conString = "User Id=ili;Password=iliqaz987;" +
+                };
+                var res = client.PostAsJsonAsync("http://class.tamam.ir/Users/AddUser", vm).Result;
+                res.EnsureSuccessStatusCode();
+                var data = res.Content.ReadAsStringAsync();
+                Console.WriteLine(data);
+            }
 
-            //How to connect to an Oracle DB without SQL*Net configuration file
-            //  also known as tnsnames.ora.
-            "Data Source=86.104.46.204:1521/kanoondb;";
 
-            //How to connect to an Oracle DB with a DB alias.
-            //Uncomment below and comment above.
-            //"Data Source=;";
+        }
 
+        private static List<UserModel> GetTeachers()
+        {
+            string Query = $"select distinct TEACHER_FNAME,TEACHER_LNAME,TEACHER_CODE,CLASS_UNICODE,DTE_SABT from zaban.v_ili ";
+            //Query += $" Where DTE_SABT='{now}'";
+            List<UserModel> ls = new List<UserModel>();
             using (OracleConnection con = new OracleConnection(conString))
             {
-                using (OracleCommand cmd = con.CreateCommand())
+                using OracleCommand cmd = con.CreateCommand();
+                try
                 {
-                    try
+                    con.Open();
+                    Console.WriteLine("Connect Success ...");
+                    cmd.BindByName = true;
+
+                    cmd.CommandText = Query;
+
+                    OracleDataReader reader = cmd.ExecuteReader();
+                    Dictionary<string, string> dic = new Dictionary<string, string>();
+
+                    while (reader.Read())
                     {
-                        con.Open();
-                        cmd.BindByName = true;
 
-                        //Use the command to display employee names from 
-                        // the EMPLOYEES table
-                        cmd.CommandText = "select * from zaban.V_ili";
-
-                        
-
-                        //Execute the command and use DataReader to display the data
-                        OracleDataReader reader = cmd.ExecuteReader();
-                        while (reader.Read())
+                        UserModel user = new UserModel()
                         {
-                            for (int i = 0; i < reader.FieldCount; i++)
-                            {
-                                Console.WriteLine("Employee First Name: " + reader[i]);
+                            Name = reader[0].ToString(),
+                            LastName = reader[1].ToString(),
+                            MeliCode = reader[2].ToString(),
+                            UniqCode = reader[2].ToString(),
+                            ClassUniqCode = reader[3].ToString(),
+                            RegisterDate = reader[4].ToString(),
+                            IsTeacher = true
+                        };
 
-                            }
-                        }
-
-                        Console.WriteLine();
-                        Console.WriteLine("Press 'Enter' to continue");
-
-                        reader.Dispose();
+                        ls.Add(user);
+                        Console.WriteLine("User Added");
                     }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine(ex.Message);
-                    }
-                    Console.ReadLine();
+
+                    Console.WriteLine();
+                    Console.WriteLine("Press 'Enter' to continue");
+
+                    reader.Dispose();
                 }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                }
+                Console.ReadLine();
             }
+            return ls;
+        }
+
+        private static List<UserModel> GetUsers()
+        {
+            string Query = "select  * from zaban.V_ili";
+            //Query += $" Where DTE_SABT='{now}'";
+
+            List<UserModel> ls = new List<UserModel>();
+            using (OracleConnection con = new OracleConnection(conString))
+            {
+                using OracleCommand cmd = con.CreateCommand();
+                try
+                {
+                    con.Open();
+                    Console.WriteLine("Connect Success ...");
+                    cmd.BindByName = true;
+
+                    cmd.CommandText = Query;
+
+                    OracleDataReader reader = cmd.ExecuteReader();
+                    Dictionary<string, string> dic = new Dictionary<string, string>();
+
+                    while (reader.Read())
+                    {
+
+                        UserModel user = new UserModel()
+                        {
+                            Name = reader[0].ToString(),
+                            LastName = reader[1].ToString(),
+                            MeliCode = reader[2].ToString(),
+                            UniqCode = reader[3].ToString(),
+                            ClassUniqCode = reader[4].ToString(),
+                            RegisterDate = reader[5].ToString(),
+                            Date = reader[11].ToString(),
+                            Time = reader[12].ToString(),
+                            IsTeacher = false
+                        };
+
+                        ls.Add(user);
+                        Console.WriteLine("User Added");
+                    }
+
+                    Console.WriteLine();
+                    Console.WriteLine("Press 'Enter' to continue");
+
+                    reader.Dispose();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                }
+                Console.ReadLine();
+            }
+            return ls;
         }
     }
 }
